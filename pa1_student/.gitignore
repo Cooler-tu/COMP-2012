@@ -1,0 +1,6 @@
+*.o
+*.d
+*.dSYM/
+shopping_debug
+shopping_system
+.DS_Store
