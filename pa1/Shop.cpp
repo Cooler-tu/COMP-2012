@@ -58,7 +58,8 @@ bool Shop::stock_product(Product* product)
         inventory[i] = inventory[i-1];
         inventory[i-1] = nullptr;
     }
-    if(inventory[0] == nullptr) inventory[0] = product;
+    if(num_of_inventory == 0 || inventory[0] == nullptr)
+        inventory[0] = product;
     num_of_inventory++;
     return true;
 }  
@@ -165,45 +166,80 @@ bool Shop::handle_order(const int* order, int order_size, Customer* customer)
         return false;
         
     int pos = 0, tot = 0, i;
+
+    int* order_o = new int[order_size];
+    for(int i = 0; i < order_size; i++)
+        order_o[i] = order[i];
+    for(int i = 0; i < order_size; i++)
+        for(int j = i+1; j < order_size; j++)
+            if(order_o[i] > order_o[j])
+            {
+                int tmp = order_o[i];
+                order_o[i] = order_o[j];
+                order_o[j] = tmp;
+            }
+
     for(i = 0; i < order_size;)
     {
-        while(pos < num_of_inventory && order[i] > inventory[pos]->get_ID()){pos++;}
-        while(pos < num_of_inventory && i < order_size && order[i] == inventory[pos]->get_ID())
+        if(pos == num_of_inventory) 
+        {
+            delete[] order_o;
+            return false;
+        }
+        while(pos < num_of_inventory && order_o[i] > inventory[pos]->get_ID()){pos++;}
+        while(pos < num_of_inventory && i < order_size && order_o[i] == inventory[pos]->get_ID())
         {
             tot += inventory[pos]->get_price();
             i++; pos++;
         }
-        if(pos < num_of_inventory && i < order_size && order[i] < inventory[pos]->get_ID())
+        if(pos < num_of_inventory && i < order_size && order_o[i] < inventory[pos]->get_ID())
+        {
+            delete[] order_o;
             return false;
-        if(pos == num_of_inventory) return false;
+        }
     }
-    if(i != order_size) return false;
+    if(i != order_size)
+    {
+        delete[] order_o;
+        return false;
+    }
 
     int rev = 0;
-    if(platform == nullptr) rev = tot;
+    if(platform == nullptr) rev = 0;
     else if(this->platform->check_if_VIP(customer->get_ID()))
     {
         tot *= platform->get_VIP_discount();
         rev = tot * cut_rate / 2;
     }
     else rev = tot * cut_rate;
-    if(tot > customer->get_balance()) return false;
+    if(tot > customer->get_balance())
+    {
+        delete[] order_o;
+        return false;
+    }
 
     pos = 0;
-    for(int i = 0; i < order_size;)
+    for(int i = 0; i < order_size; i++)
     {
-        while(pos < num_of_inventory && order[i] > inventory[pos]->get_ID()){pos++;}
-        while(pos < num_of_inventory && i < order_size && order[i] == inventory[pos]->get_ID())
+        for(pos = 0; pos < num_of_inventory; pos++)
         {
-            customer->add_product(inventory[pos]);
-            remove_product(inventory[pos]->get_ID());
-            i++;
+            if(order[i] == inventory[pos]->get_ID())
+            {
+                customer->add_product(inventory[pos]);
+                remove_product(inventory[pos]->get_ID());
+                break;
+            }
         }
     }
 
     customer->change_balance(-1*tot);
-    this->change_balance(rev);
-    platform->change_balance(tot-rev);
+    this->change_balance(tot-rev);
+    if(platform)
+    {
+        platform->change_balance(rev);
+        platform->update_customer_data(customer->get_ID(), tot);
+    }
+    delete[] order_o;
     return true;
 
 }

@@ -27,8 +27,9 @@ Product* Shop::remove_product(int product_ID)
                 inventory[j] = inventory[j+1];
             inventory[num_of_inventory-1] = nullptr;
             num_of_inventory--;
+            return r;
         }
-    return r;
+    return nullptr;
 }
 
 // End of to-do

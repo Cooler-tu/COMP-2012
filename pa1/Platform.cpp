@@ -19,6 +19,13 @@ Platform::~Platform()
         delete shops[i]; 
     num_of_shops = 0;
     delete [] shops;
+    CustomerData* now = customer_data;
+    while(now != nullptr)
+    {
+        CustomerData* next = now->next;
+        delete now;
+        now = next;
+    }
 }
 
 bool Platform::add_shop(Shop* shop)
@@ -163,21 +170,27 @@ void Platform::simulate_end_of_month()
             shops[i]->change_balance(-gap);
             this->change_balance(gap);
             delete_shop(shops[i]->get_ID());
+            i--;
             continue;
         }
         if(shops[i]->get_i_th_rating(3) != nullptr
            && shops[i]->get_average_score() < 15)
-            delete_shop(shops[i]->get_ID());
+           {
+                delete_shop(shops[i]->get_ID());
+                i--;
+           }
     }
     for(int i = 0; i < num_of_shops; i++)
-        for(int j = i+1; j < num_of_shops; j++)
-            if(shops[i]->get_average_score() < shops[j]->get_average_score())
+        for(int j = i+1; j < num_of_shops; j++){
+            if(shops[i]->get_average_score() < shops[j]->get_average_score()
+            || (shops[i]->get_average_score() == shops[j]->get_average_score() && shops[i]->get_ID() > shops[j]->get_ID()))
             {
                 Shop* tmp = shops[i];
                 shops[i] = shops[j];
                 shops[j] = tmp;
                 j--;
             }
+        }
 }
 
 // End of to-do

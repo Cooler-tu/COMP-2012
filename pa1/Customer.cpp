@@ -65,8 +65,9 @@ bool Customer::rate_shop(Shop* shop, int score)
             Rating* now = ratings, *pre = nullptr;
             while(now != nullptr)
             {
-                if(now->shop == shop)
+                if(now->shop_ID == shop->get_ID())
                 {
+                    now->shop = shop;
                     if(now == ratings)
                     {
                         now->score = score;
@@ -138,7 +139,7 @@ bool Customer::delete_rating(int shop_ID)
             if(pre) pre->customer_next = now->customer_next;
             else ratings = now->customer_next;
             now->customer_next = nullptr;
-            now->shop->remove_rating(customer_ID);
+            if(now->shop) now->shop->remove_rating(customer_ID);
             delete now;
             return true;
         }
